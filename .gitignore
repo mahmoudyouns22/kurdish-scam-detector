@@ -26,5 +26,10 @@ env/
 
 .ipynb_checkpoints/
 .DS_Store
+
+# Editor and tooling config: local to whoever is working on the repo, not part
+# of the project. .claude/launch.json describes how to start the Streamlit app
+# and the static demo server on this machine.
 .vscode/
 .idea/
+.claude/
