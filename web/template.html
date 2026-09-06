@@ -255,6 +255,29 @@ footer{
 }
 footer b{color:var(--ink);font-weight:600}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* Touch targets.
+   The layout is fluid rather than breakpoint-driven, so it already reflows
+   down to 320px without horizontal scroll. What does not survive the move to
+   a phone is the inline links: at 13px they are ~22px tall, under the 24px
+   WCAG 2.2 minimum and well under a comfortable thumb target. Padding them
+   out on coarse pointers costs the desktop layout nothing. */
+@media (pointer:coarse), (max-width:900px){
+  .headlinks a, footer a{
+    display:inline-flex; align-items:center; min-height:44px;
+  }
+  /* Widen the gap between example chips so adjacent ones are not mis-tapped,
+     and give each a full thumb-height target. */
+  .chips{gap:10px}
+  .chip{min-height:40px; display:inline-flex; align-items:center}
+}
+
+/* Very narrow phones. Nothing breaks here, but the hero runs to four lines
+   and the reason rows get cramped, so ease the type down a step. */
+@media (max-width:360px){
+  .headlinks{gap:14px}
+  h1{font-size:clamp(26px,8vw,34px)}
+}
 </style>
 
 <div class="wrap">
