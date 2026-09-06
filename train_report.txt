@@ -1,0 +1,60 @@
+corpus 3321  ->  train 2649  test 672
+train seeds 166  test seeds 42
+seed overlap: none
+
+### logreg  (fit+predict 27.4s)
+              precision    recall  f1-score   support
+
+         ham      0.899     0.952     0.925       336
+        scam      0.949     0.893     0.920       336
+
+    accuracy                          0.923       672
+   macro avg      0.924     0.923     0.923       672
+weighted avg      0.924     0.923     0.923       672
+
+confusion matrix (rows true ham/scam, cols pred ham/scam):
+[[320  16]
+ [ 36 300]]
+  ar: scam-F1 0.886  (n=320)
+  ckb: scam-F1 0.952  (n=352)
+
+### svc  (fit+predict 27.0s)
+              precision    recall  f1-score   support
+
+         ham      0.909     0.952     0.930       336
+        scam      0.950     0.905     0.927       336
+
+    accuracy                          0.929       672
+   macro avg      0.930     0.929     0.929       672
+weighted avg      0.930     0.929     0.929       672
+
+confusion matrix (rows true ham/scam, cols pred ham/scam):
+[[320  16]
+ [ 32 304]]
+  ar: scam-F1 0.900  (n=320)
+  ckb: scam-F1 0.952  (n=352)
+
+### rf  (fit+predict 28.2s)
+              precision    recall  f1-score   support
+
+         ham      0.850     0.857     0.853       336
+        scam      0.856     0.848     0.852       336
+
+    accuracy                          0.853       672
+   macro avg      0.853     0.853     0.853       672
+weighted avg      0.853     0.853     0.853       672
+
+confusion matrix (rows true ham/scam, cols pred ham/scam):
+[[288  48]
+ [ 51 285]]
+  ar: scam-F1 0.789  (n=320)
+  ckb: scam-F1 0.909  (n=352)
+
+total training time: 82.7s
+
+scam-F1 on held-out seeds:
+  svc     0.927
+  logreg  0.920
+  rf      0.852
+
+shipped logreg refit on all 3321 rows -> C:\Users\lenovo\Desktop\me\projects\kurdish-scam-detector\models\model.joblib

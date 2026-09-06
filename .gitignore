@@ -1,0 +1,30 @@
+# Generated corpus: rebuild with `python src/build_dataset.py`. The seeds in
+# data/seeds/ are the source of truth and are tracked.
+data/corpus.csv
+
+# Trained models: rebuild with `python src/train.py`
+models/*.pkl
+models/*.joblib
+
+# Web build intermediates. web/demo.html IS tracked -- it is the deliverable,
+# runs with no build step, and lets GitHub Pages serve the demo directly.
+web/model.json
+web/artifact.html
+web/.playwright-mcp/
+.playwright-mcp/
+
+# eval_report.txt and train_report.txt are deliberately NOT ignored. They are
+# the evidence behind every number in the README, and a reviewer should be able
+# to check the claims without first reproducing a 50-second training run.
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.env
+
+.ipynb_checkpoints/
+.DS_Store
+.vscode/
+.idea/

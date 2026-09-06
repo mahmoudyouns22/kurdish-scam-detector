@@ -1,0 +1,21 @@
+# Core pipeline. Versions are the ones the reported results were produced on;
+# earlier 1.x/2.x releases of these packages will very likely work too.
+scikit-learn>=1.5        # TF-IDF, LogisticRegression/LinearSVC/RandomForest, StratifiedGroupKFold
+pandas>=2.2              # corpus load and per-language slicing
+numpy>=1.26              # feature matrices
+scipy>=1.11              # sparse hstack behind FeatureUnion (pulled in by sklearn)
+joblib>=1.4              # model persistence
+
+# Demo only. The pipeline trains and evaluates without it.
+streamlit>=1.30
+
+# Deliberately NOT depended on:
+#   klpt  -- the Kurdish Language Processing Toolkit would be the better
+#            citation for the normalisation layer, but every release pins
+#            cyhunspell/chunspell, which publish no wheels for Python 3.14 and
+#            need a hunspell toolchain to build from source. `pip install klpt`
+#            fails with ResolutionImpossible on this interpreter, so
+#            src/normalize.py implements the normalisation directly.
+#   transformers/torch -- see the README results table: the linear baseline is
+#            not yet beaten on a corpus this size, so a transformer would add
+#            a multi-GB dependency and a GPU assumption for no measured gain.

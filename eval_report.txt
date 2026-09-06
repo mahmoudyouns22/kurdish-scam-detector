@@ -1,0 +1,134 @@
+corpus 3321 rows / 208 seeds
+train 2649 (166 seeds)  test 672 (42 seeds)
+
+==========================================================================
+1. HELD-OUT (group-aware split on seed_id)
+==========================================================================
+              precision    recall  f1-score   support
+
+         ham      0.899     0.952     0.925       336
+        scam      0.949     0.893     0.920       336
+
+    accuracy                          0.923       672
+   macro avg      0.924     0.923     0.923       672
+weighted avg      0.924     0.923     0.923       672
+
+confusion matrix        pred_ham  pred_scam
+  true_ham                  320        16
+  true_scam                  36       300
+
+average precision (PR-AUC, scam): 0.986
+
+per language:
+  ar   n= 320  P 0.897  R 0.875  F1 0.886
+  ckb  n= 352  P 1.000  R 0.909  F1 0.952
+
+per scam category (recall):
+  delivery   n=  64  recall 0.750
+  job        n=  32  recall 0.500
+  otp        n=  64  recall 1.000
+  phishing   n=  48  recall 1.000
+  prize      n=  80  recall 1.000
+  support    n=  32  recall 0.875
+  transfer   n=  16  recall 1.000
+
+==========================================================================
+1b. CROSS-VALIDATED (5 group-aware folds)
+==========================================================================
+One fold holds out ~42 seeds, so single-fold numbers swing several
+points and per-category cells can be 2 seeds wide. These are the
+numbers to quote: mean +/- population std over all five folds.
+
+logreg (shipped)           scam-F1 0.938 +/- 0.026   ar 0.928   ckb 0.942
+linear SVC                 scam-F1 0.931 +/- 0.019   ar 0.919   ckb 0.937
+random forest              scam-F1 0.893 +/- 0.063   ar 0.843   ckb 0.922
+logreg, signals centred    scam-F1 0.934 +/- 0.022   ar 0.938   ckb 0.926
+logreg, no normalisation   scam-F1 0.939 +/- 0.025   ar 0.932   ckb 0.939
+
+==========================================================================
+2. CROSS-LINGUAL TRANSFER (Arabic <-> Kurdish)
+==========================================================================
+Train on one language, test on the other.
+
+Split is grouped on concept_id, not seed_id. The seed files are
+parallel translations (ar-scam-017 is ckb-scam-017 in Arabic, same
+amounts), so grouping on seed_id alone would put the Arabic twin of
+a Kurdish test message into training and call the result transfer.
+One concept split is reused for every row below, so the six numbers
+are measured on the same held-out concepts and are comparable.
+
+held-out concepts: 21 (train 83), concept overlap: none
+
+ar  -> ar   (in-language)    train  1321 test   336  P 1.000  R 0.898  scam-F1 0.946  acc 0.946
+ckb -> ckb  (in-language)    train  1328 test   336  P 1.000  R 0.903  scam-F1 0.949  acc 0.949
+ar  -> ckb  (transfer)       train  1321 test   336  P 1.000  R 0.801  scam-F1 0.890  acc 0.896
+ckb -> ar   (transfer)       train  1328 test   336  P 1.000  R 0.909  scam-F1 0.952  acc 0.952
+joint -> ckb                 train  2649 test   336  P 1.000  R 0.898  scam-F1 0.946  acc 0.946
+joint -> ar                  train  2649 test   336  P 1.000  R 0.909  scam-F1 0.952  acc 0.952
+
+n-grams only (signals disabled) -- isolates what the script carries:
+  ar  -> ar   (in-language)    scam-F1 1.000
+  ckb -> ckb  (in-language)    scam-F1 0.919
+  ar  -> ckb  (transfer)       scam-F1 0.834
+  ckb -> ar   (transfer)       scam-F1 0.716
+
+==========================================================================
+3. ABLATION
+==========================================================================
+full (char+word+signals, normalised)   scam-F1 0.920   (ckb 0.952)
+no normalisation                       scam-F1 0.927   (ckb 0.952)
+no entity folding                      scam-F1 0.923   (ckb 0.952)
+no normalisation, no folding           scam-F1 0.933   (ckb 0.952)
+char n-grams only                      scam-F1 0.909   (ckb 0.917)
+word n-grams only                      scam-F1 0.906   (ckb 0.924)
+char+word, no signals                  scam-F1 0.918   (ckb 0.926)
+signals only                           scam-F1 0.905   (ckb 0.912)
+signals centred (StandardScaler)       scam-F1 0.927   (ckb 0.909)
+
+==========================================================================
+3b. NORMALISATION UNDER ORTHOGRAPHIC SHIFT
+==========================================================================
+The i.i.d. ablation shows normalisation doing nothing, and that is
+expected: train and test are perturbed by the same generator, so
+the model simply memorises both spellings. Normalisation earns its
+place when test-time orthography differs from training-time, which
+is what this measures -- train on the normal training set, test on
+a test set pushed into script variants the model has not seen.
+
+with normalisation       clean F1 0.920   shifted F1 0.902   delta -0.018
+without normalisation    clean F1 0.927   shifted F1 0.849   delta -0.078
+
+==========================================================================
+4. ADVERSARIAL PROBE
+==========================================================================
+Evasions are applied to the WHOLE held-out set, both classes.
+Scoring only evaded scam messages is misleading: mangling text
+shreds it into rare n-grams that look nothing like clean ham, so
+the model drifts toward 'scam' and recall appears to *improve*
+while precision quietly collapses. The false-positive rate on
+evaded ham is the column that exposes that.
+These transforms never appear in training.
+
+baseline (no evasion)            F1 0.920  recall 0.893  FPR(ham) 0.048
+zero-width insertion             F1 0.901  recall 0.881  FPR(ham) 0.074
+tatweel padding                  F1 0.917  recall 0.935  FPR(ham) 0.104
+letter stretching                F1 0.723  recall 0.628  FPR(ham) 0.110
+digit-system swap                F1 0.920  recall 0.893  FPR(ham) 0.048
+Latin transliteration            F1 0.483  recall 0.318  FPR(ham) 0.000
+combined (zw+tatweel+stretch)    F1 0.848  recall 0.923  FPR(ham) 0.253
+
+                                      F1 drop vs baseline
+zero-width insertion             +0.019
+tatweel padding                  +0.003
+letter stretching                +0.198
+digit-system swap                +0.000
+Latin transliteration            +0.437
+combined (zw+tatweel+stretch)    +0.072
+
+==========================================================================
+5. COLLECTED-DATA EVALUATION
+==========================================================================
+No rows with source='collected' in the corpus.
+Every number above is measured on AUTHORED synthetic data and
+therefore reports pattern separability, not field performance.
+See data/README.md for how to contribute real messages.

@@ -1,0 +1,12 @@
+# Matches the palette in web/template.html so the desktop app and the browser
+# demo read as one product rather than two unrelated tools.
+[theme]
+base = "dark"
+primaryColor = "#E0A94A"
+backgroundColor = "#16141A"
+secondaryBackgroundColor = "#201D26"
+textColor = "#F3EFE9"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false

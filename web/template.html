@@ -1,0 +1,604 @@
+<title>Agadar Scam Detector</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@600;700&display=swap">
+<style>
+:root{
+  --ground:#FAF8F5; --surface:#FFFFFF; --surface-2:#F1EDE7; --surface-3:#E7E1D8;
+  --line:#DCD5CA; --line-soft:#EBE5DC;
+  --ink:#1E1A22; --ink-mid:#4A4353; --ink-dim:#6B6377;
+  --accent:#A0650F; --accent-soft:#F5E7CC;
+  --danger:#A8352A; --danger-soft:#F7DED9;
+  --safe:#2E6647; --safe-soft:#DCEDE1;
+  --shadow:0 1px 2px rgba(30,26,34,.06), 0 8px 24px -12px rgba(30,26,34,.18);
+  --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  --serif:"IBM Plex Serif",Georgia,serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --arab:"IBM Plex Sans Arabic","IBM Plex Sans",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#16141A; --surface:#201D26; --surface-2:#2A2632; --surface-3:#332E3D;
+    --line:#3B3547; --line-soft:#2E2937;
+    --ink:#F3EFE9; --ink-mid:#C4BCCE; --ink-dim:#9A92A6;
+    --accent:#E0A94A; --accent-soft:#3A2F1C;
+    --danger:#E5705C; --danger-soft:#3D2320;
+    --safe:#72B692; --safe-soft:#1E3129;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#16141A; --surface:#201D26; --surface-2:#2A2632; --surface-3:#332E3D;
+  --line:#3B3547; --line-soft:#2E2937;
+  --ink:#F3EFE9; --ink-mid:#C4BCCE; --ink-dim:#9A92A6;
+  --accent:#E0A94A; --accent-soft:#3A2F1C;
+  --danger:#E5705C; --danger-soft:#3D2320;
+  --safe:#72B692; --safe-soft:#1E3129;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink); font-family:var(--sans);
+  font-size:15px; line-height:1.6; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:920px;margin:0 auto;padding:0 22px 72px}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+a:hover{border-bottom-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+/* ---- header ---- */
+.brandline{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}
+.wordmark{font-family:var(--arab);font-size:26px;font-weight:700;color:var(--accent);line-height:1}
+.wordmark-lat{
+  font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--ink-dim)
+}
+header{padding:44px 0 26px;border-bottom:1px solid var(--line-soft)}
+.eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-dim);display:flex;gap:10px;align-items:center;flex-wrap:wrap
+}
+.eyebrow .dot{width:5px;height:5px;border-radius:50%;background:var(--accent)}
+h1{
+  font-family:var(--serif);font-weight:700;font-size:clamp(30px,5.2vw,44px);
+  line-height:1.1;margin:14px 0 0;text-wrap:balance;letter-spacing:-.015em
+}
+.sub{color:var(--ink-mid);max-width:60ch;margin:12px 0 0;font-size:16px}
+.headlinks{display:flex;gap:18px;flex-wrap:wrap;margin-top:18px;font-size:13.5px}
+
+/* ---- detector ---- */
+.detector{
+  margin:30px 0 0;background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;box-shadow:var(--shadow);overflow:hidden
+}
+.dhead{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  padding:15px 20px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap
+}
+.dhead h2{font-size:14px;margin:0;font-weight:600;letter-spacing:.01em}
+.privacy{
+  font-family:var(--mono);font-size:11px;color:var(--safe);
+  display:flex;align-items:center;gap:6px
+}
+.privacy svg{width:12px;height:12px}
+
+.examples{padding:16px 20px 4px}
+.exlabel{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-dim);margin-bottom:9px
+}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{
+  font:inherit;font-size:12.5px;padding:5px 11px;border-radius:999px;cursor:pointer;
+  background:var(--surface-2);color:var(--ink-mid);border:1px solid var(--line-soft);
+  transition:background .12s,color .12s,border-color .12s
+}
+.chip:hover{background:var(--surface-3);color:var(--ink)}
+.chip[data-kind="scam"]::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--danger);margin-inline-end:6px;vertical-align:middle}
+.chip[data-kind="ham"]::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--safe);margin-inline-end:6px;vertical-align:middle}
+
+.composer{padding:14px 20px 18px}
+textarea{
+  width:100%;min-height:96px;resize:vertical;padding:14px 15px;
+  background:var(--ground);color:var(--ink);border:1px solid var(--line);
+  border-radius:10px;font-family:var(--arab);font-size:16.5px;line-height:1.85;
+  direction:rtl;text-align:right
+}
+textarea::placeholder{color:var(--ink-dim);opacity:.75}
+textarea:focus{border-color:var(--accent);outline:none}
+
+/* ---- verdict ---- */
+.verdict{border-top:1px solid var(--line-soft);padding:20px}
+.vtop{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.stamp{
+  font-family:var(--serif);font-weight:700;font-size:23px;letter-spacing:-.01em;
+  display:flex;align-items:center;gap:9px
+}
+.stamp .mark{
+  width:26px;height:26px;border-radius:7px;display:grid;place-items:center;
+  font-family:var(--mono);font-size:15px;font-weight:500;color:var(--surface)
+}
+.is-scam .stamp{color:var(--danger)}
+.is-scam .mark{background:var(--danger)}
+.is-ham .stamp{color:var(--safe)}
+.is-ham .mark{background:var(--safe)}
+.pct{
+  margin-inline-start:auto;font-family:var(--mono);font-size:13px;color:var(--ink-dim);
+  font-variant-numeric:tabular-nums
+}
+
+.meter{height:6px;border-radius:99px;background:var(--surface-2);margin:14px 0 4px;overflow:hidden;position:relative}
+.meter i{display:block;height:100%;border-radius:99px;transition:width .35s cubic-bezier(.4,0,.2,1)}
+.is-scam .meter i{background:var(--danger)}
+.is-ham .meter i{background:var(--safe)}
+.mticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--ink-dim)}
+
+.langs{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:16px}
+.lang{
+  padding:10px 13px;border-radius:9px;background:var(--surface-2);
+  border:1px solid var(--line-soft)
+}
+.lang b{
+  display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-dim);font-weight:400;margin-bottom:3px
+}
+.lang span{font-family:var(--arab);font-size:16px;font-weight:600}
+.lang.en span{font-family:var(--sans);font-size:15px}
+.lang[dir="rtl"]{direction:rtl;text-align:right}
+.is-scam .lang span{color:var(--danger)}
+.is-ham .lang span{color:var(--safe)}
+
+/* ---- SMS bubble ---- */
+.bubblewrap{margin-top:22px}
+.blabel{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-dim);margin-bottom:10px
+}
+.bubble{
+  position:relative;background:var(--surface-2);border:1px solid var(--line-soft);
+  border-radius:14px 14px 14px 4px;padding:14px 16px;max-width:100%;
+  font-family:var(--arab);font-size:16.5px;line-height:2.05;direction:rtl;text-align:right;
+  overflow-wrap:anywhere
+}
+mark{
+  padding:2px 3px;border-radius:4px;background:transparent;color:inherit;
+  box-shadow:inset 0 -0.62em 0 0 var(--hl,var(--surface-3));
+}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:11px}
+.lg{font-family:var(--mono);font-size:10.5px;color:var(--ink-dim);display:flex;align-items:center;gap:5px}
+.lg i{width:9px;height:9px;border-radius:2px;display:inline-block}
+
+/* ---- reasons ---- */
+.reasons{margin-top:24px}
+.rrow{
+  display:grid;grid-template-columns:1fr auto;gap:4px 14px;align-items:baseline;
+  padding:9px 0;border-bottom:1px solid var(--line-soft)
+}
+.rrow:last-child{border-bottom:none}
+.rname{font-size:14px;font-weight:500}
+.rtrans{
+  grid-column:1;font-family:var(--arab);font-size:13px;color:var(--ink-dim);
+  direction:rtl;text-align:right
+}
+.rbar{grid-column:2;grid-row:1/3;display:flex;align-items:center;gap:9px}
+.rbar .track{width:88px;height:5px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.rbar .track i{display:block;height:100%;border-radius:99px}
+.rval{font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
+.toward-scam .track i{background:var(--danger)}
+.toward-ham .track i{background:var(--safe)}
+
+details.ngrams{margin-top:16px;border-top:1px solid var(--line-soft);padding-top:13px}
+details.ngrams summary{
+  cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-dim);list-style:none
+}
+details.ngrams summary::-webkit-details-marker{display:none}
+details.ngrams summary::before{content:"▸ ";}
+details.ngrams[open] summary::before{content:"▾ ";}
+.gram{
+  display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;
+  background:var(--surface-2);border:1px solid var(--line-soft);border-radius:6px;
+  padding:3px 8px;margin:7px 6px 0 0
+}
+.gram u{text-decoration:none;color:var(--ink-dim)}
+
+.caveat{
+  margin-top:20px;padding:12px 14px;border-radius:9px;background:var(--surface-2);
+  border-inline-start:2px solid var(--accent);font-size:13px;color:var(--ink-mid)
+}
+
+/* ---- content sections ---- */
+section{padding-top:52px}
+h2.sec{
+  font-family:var(--serif);font-size:24px;font-weight:600;margin:0 0 6px;letter-spacing:-.01em
+}
+.seclede{color:var(--ink-mid);max-width:64ch;margin:0 0 22px}
+h3{font-size:14px;margin:26px 0 10px;font-weight:600;letter-spacing:.01em}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line-soft)}
+th{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-dim);font-weight:400;white-space:nowrap
+}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.hero td{background:var(--accent-soft)}
+tr.hero td:first-child{font-weight:600}
+td.bad{color:var(--danger);font-weight:600}
+td.good{color:var(--safe)}
+
+.pipe{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin-top:8px
+}
+.step{
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:13px 14px
+}
+.step b{
+  display:block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:6px;font-weight:500
+}
+.step p{margin:0;font-size:13px;color:var(--ink-mid);line-height:1.55}
+.step code{font-family:var(--mono);font-size:11.5px;color:var(--ink)}
+
+ol.lim{padding-inline-start:20px;margin:0}
+ol.lim li{margin-bottom:11px;max-width:66ch}
+ol.lim b{font-weight:600}
+
+footer{
+  margin-top:60px;padding-top:26px;border-top:1px solid var(--line-soft);
+  display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;
+  font-size:13px;color:var(--ink-dim)
+}
+footer b{color:var(--ink);font-weight:600}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="brandline">
+    <span class="wordmark">ئاگادار</span>
+    <span class="wordmark-lat">Agadar</span>
+  </div>
+  <div class="eyebrow">
+    <span class="dot"></span><span>Sorani Kurdish · Iraqi Arabic</span>
+    <span class="dot"></span><span>runs on your device</span>
+  </div>
+  <h1>Scam messages, caught in the language they arrive in.</h1>
+  <p class="sub">
+    Iraq ranks 8th of 193 countries for organised crime, and SMS fraud is an everyday
+    harm here. Detection tools exist for Arabic. For Kurdish, as far as we could find,
+    none did. This one runs entirely in your browser — paste a message and see not just
+    the verdict, but which words produced it.
+  </p>
+  <div class="headlinks">
+    <a href="https://github.com/mahmoudyouns22/kurdish-scam-detector">Source &amp; data →</a>
+    <a href="#results">Measured results →</a>
+    <a href="#limits">What it gets wrong →</a>
+  </div>
+</header>
+
+<div class="detector" id="det">
+  <div class="dhead">
+    <h2>Live detector</h2>
+    <div class="privacy">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+        <rect x="4" y="10" width="16" height="11" rx="2" fill="none"></rect>
+        <path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none"></path>
+      </svg>
+      <span>No network calls — the model is in this page</span>
+    </div>
+  </div>
+
+  <div class="examples">
+    <div class="exlabel">Try one</div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="composer">
+    <textarea id="msg" spellcheck="false" placeholder="نامەکە لێرە بنووسە..." aria-label="Message to check"></textarea>
+  </div>
+
+  <div class="verdict" id="verdict">
+    <div class="vtop">
+      <div class="stamp"><span class="mark" id="mark"></span><span id="vtext"></span></div>
+      <div class="pct" id="pct"></div>
+    </div>
+    <div class="meter"><i id="bar"></i></div>
+    <div class="mticks"><span>legitimate</span><span>scam</span></div>
+
+    <div class="langs">
+      <div class="lang en"><b>English</b><span id="v-en"></span></div>
+      <div class="lang" dir="rtl"><b>کوردی</b><span id="v-ckb"></span></div>
+      <div class="lang" dir="rtl"><b>العربية</b><span id="v-ar"></span></div>
+    </div>
+
+    <div class="bubblewrap">
+      <div class="blabel">What triggered it</div>
+      <div class="bubble" id="bubble"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <div class="reasons" id="reasons"></div>
+
+    <details class="ngrams">
+      <summary>Character &amp; word patterns</summary>
+      <div id="grams"></div>
+    </details>
+
+    <p class="caveat">
+      Trained on an authored synthetic corpus — no real intercepted messages yet.
+      Treat this as a second opinion that explains itself, not a verdict.
+    </p>
+  </div>
+</div>
+
+<section id="how">
+  <h2 class="sec">How it decides</h2>
+  <p class="seclede">
+    A scammer controls the spelling and the link. The pipeline handles both before the
+    model sees a word.
+  </p>
+  <div class="pipe">
+    <div class="step"><b>1 · Normalise</b><p>Sorani and Arabic share a script but not its rules. Kurdish <code>ی</code> (U+06CC) and Arabic <code>ي</code> (U+064A) look identical and are different characters. Zero-width joiners, tatweel padding and Arabic-Indic digits all split a keyword invisibly. All of it is folded first.</p></div>
+    <div class="step"><b>2 · Fold entities</b><p>URLs, Iraqi phone numbers and amounts become <code>__url__</code>, <code>__phone__</code>, <code>__money__</code>. That a link exists is signal; memorising one scammer's domain is not learning.</p></div>
+    <div class="step"><b>3 · Character n-grams</b><p>2–5 character TF-IDF, not words. Kurdish is morphologically rich, spelling is inconsistent and the corpus is small — sub-word features degrade where word features fail outright.</p></div>
+    <div class="step"><b>4 · Named signals</b><p>28 hand-built features read the <em>raw</em> text, which still has the real domain. The sharpest: a genuine OTP <em>gives</em> you a code and says don't share it; a scam <em>asks you to send one back</em>.</p></div>
+    <div class="step"><b>5 · Linear model</b><p>Logistic regression, deliberately. Its coefficients <em>are</em> the explanation — every reason above is <code>weight × value</code>, the model's actual arithmetic, not a story told afterwards.</p></div>
+    <div class="step"><b>6 · Ship it</b><p>14,352 dimensions, 719 KB of JSON. The whole classifier ported to JavaScript and verified against the Python pipeline on all 3,321 rows — max difference 2×10⁻¹⁵.</p></div>
+  </div>
+</section>
+
+<section id="results">
+  <h2 class="sec">Measured results</h2>
+  <p class="seclede">
+    Every number is real output from <code>src/evaluate.py</code>. Splits are group-aware:
+    all ~16 variants generated from one seed stay in the same fold, because splitting
+    them randomly returns a meaningless 99%.
+  </p>
+
+  <h3>Model comparison — 5-fold cross-validation</h3>
+  <div class="tscroll"><table>
+    <thead><tr><th>Model</th><th>scam-F1</th><th>Arabic</th><th>Kurdish</th></tr></thead>
+    <tbody>
+      <tr class="hero"><td>Logistic regression (shipped)</td><td class="num">0.938 ± 0.026</td><td class="num">0.928</td><td class="num">0.942</td></tr>
+      <tr><td>Linear SVC</td><td class="num">0.931 ± 0.019</td><td class="num">0.919</td><td class="num">0.937</td></tr>
+      <tr><td>Random forest</td><td class="num">0.893 ± 0.063</td><td class="num">0.843</td><td class="num">0.922</td></tr>
+    </tbody>
+  </table></div>
+  <p class="seclede" style="margin-top:12px">
+    The model that can explain itself is also the most accurate one, so no trade-off was
+    needed. No transformer is used — the linear baseline is not beaten on 208 seeds, and
+    reporting that is more useful than an unjustified upgrade.
+  </p>
+
+  <h3>Cross-lingual transfer — the research question</h3>
+  <div class="tscroll"><table>
+    <thead><tr><th>Train → test</th><th>Full model</th><th>n-grams only</th></tr></thead>
+    <tbody>
+      <tr><td>Arabic → Arabic <span style="color:var(--ink-dim)">(in-language)</span></td><td class="num">0.946</td><td class="num">1.000</td></tr>
+      <tr><td>Kurdish → Kurdish <span style="color:var(--ink-dim)">(in-language)</span></td><td class="num">0.949</td><td class="num">0.919</td></tr>
+      <tr class="hero"><td>Arabic → Kurdish <span style="color:var(--ink-dim)">(transfer)</span></td><td class="num">0.890</td><td class="num">0.834</td></tr>
+      <tr class="hero"><td>Kurdish → Arabic <span style="color:var(--ink-dim)">(transfer)</span></td><td class="num">0.952</td><td class="num">0.716</td></tr>
+    </tbody>
+  </table></div>
+  <p class="seclede" style="margin-top:12px">
+    Grouped on concept, not seed: the two seed files are parallel translations, so
+    grouping naively puts the Arabic twin of a Kurdish test message into training. That
+    bug inflated one row to 0.997 before it was caught. With signals disabled, transfer
+    falls to 0.716–0.834 while in-language holds at 0.919–1.000 — so character n-grams
+    over a shared script carry <em>real but partial</em> transfer, and the
+    language-independent signal layer closes the rest. For a language with no scam
+    corpus, that is the useful finding: you can bootstrap Kurdish detection from Arabic
+    before collecting a single Kurdish message.
+  </p>
+
+  <h3>Under attack</h3>
+  <p class="seclede">
+    Evasions applied to the whole held-out set, both classes. Scoring only evaded scams
+    is misleading — mangled text drifts toward "scam" regardless, so recall appears to
+    <em>improve</em> while precision collapses. The false-positive column exposes that.
+  </p>
+  <div class="tscroll"><table>
+    <thead><tr><th>Evasion</th><th>scam-F1</th><th>Recall</th><th>False positives</th></tr></thead>
+    <tbody>
+      <tr><td>None (baseline)</td><td class="num">0.920</td><td class="num">0.893</td><td class="num">0.048</td></tr>
+      <tr><td>Arabic-Indic digit swap</td><td class="num good">0.920</td><td class="num">0.893</td><td class="num">0.048</td></tr>
+      <tr><td>Tatweel padding</td><td class="num">0.917</td><td class="num">0.935</td><td class="num">0.104</td></tr>
+      <tr><td>Zero-width insertion</td><td class="num">0.901</td><td class="num">0.881</td><td class="num">0.074</td></tr>
+      <tr><td>Combined obfuscation</td><td class="num">0.848</td><td class="num">0.923</td><td class="num bad">0.253</td></tr>
+      <tr><td>Letter stretching</td><td class="num bad">0.723</td><td class="num">0.628</td><td class="num">0.110</td></tr>
+      <tr class="hero"><td>Latin transliteration</td><td class="num bad">0.483</td><td class="num bad">0.318</td><td class="num">0.000</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="limits">
+  <h2 class="sec">What it gets wrong</h2>
+  <p class="seclede">
+    Stated here rather than left to be discovered. A reader who finds an unlisted weakness
+    stops trusting everything else on the page.
+  </p>
+  <ol class="lim">
+    <li><b>The entire corpus is synthetic.</b> All 3,321 rows are authored — not one is a real intercepted message. Every number above measures whether authored scam patterns separate from authored legitimate ones. That is pattern separability, not field performance.</li>
+    <li><b>The effective sample is 208, not 3,321.</b> 208 hand-written seeds expanded ~16× by a template generator. Group-aware splitting keeps the test honest, but 42 held-out seeds per fold is small.</li>
+    <li><b>Latin transliteration defeats it.</b> F1 collapses to 0.483, recall to 0.318. A scammer writing Sorani in Latin script evades this today.</li>
+    <li><b>Heavy obfuscation makes it cry wolf.</b> A 25.3% false-positive rate under combined evasion. A tool that flags everything is useless.</li>
+    <li><b>The Kurdish seeds await native-speaker review.</b> Each seed is amplified ~16×, so a wrong register propagates to ~832 rows.</li>
+    <li><b>Normalisation shows no in-distribution gain.</b> It earns its place under orthographic shift (−1.8 points with it, −7.8 without), not on the headline number.</li>
+  </ol>
+</section>
+
+<footer>
+  <div>
+    <b>Mahmoud Youns Mahmoud</b><br>
+    Cybersecurity undergraduate, Tishk International University, Erbil<br>
+    Co-founder &amp; Head of Technology, Nexaura
+  </div>
+  <div style="text-align:right">
+    <a href="https://github.com/mahmoudyouns22/kurdish-scam-detector">github.com/mahmoudyouns22</a><br>
+    Agadar · MIT licensed · built for AI Olympiad 2026
+  </div>
+</footer>
+</div>
+
+<script id="model-data" type="application/json">__MODEL_JSON__</script>
+<script>__ENGINE_JS__</script>
+<script>
+(function(){
+  "use strict";
+  var model = JSON.parse(document.getElementById("model-data").textContent);
+  var eng = new ScamEngine.Engine(model);
+
+  var LABELS = __SIGNAL_LABELS__;
+
+  var HL = {
+    link:"var(--danger-soft)", phone:"var(--accent-soft)", money:"var(--accent-soft)",
+    brand:"var(--surface-3)", urgency:"var(--danger-soft)", prize:"var(--danger-soft)",
+    sensitive:"var(--danger-soft)", asks_for_code:"var(--danger-soft)",
+    provides_code:"var(--safe-soft)", action_link:"var(--danger-soft)",
+    pay_fee:"var(--accent-soft)"
+  };
+  var LEGEND = [
+    ["link","link"],["phone","phone number"],["money","amount"],["brand","company"],
+    ["urgency","urgency"],["prize","prize wording"],["asks_for_code","asks for a code"],
+    ["provides_code","gives a code"]
+  ];
+
+  var EXAMPLES = [
+    ["Kurdish · prize", "scam", "پیرۆزە! ژمارەکەت 10000000 دینار بردویەتییەوە. خێرا پەیوەندی بکە 0750 000 0000"],
+    ["Kurdish · fake Zain Cash", "scam", "ئاگاداری: ئەکاونتی زین کاشەکەت ڕاگیراوە. بۆ چالاککردنەوەی خێرا کلیک بکە لەسەر http://zaincash-iq.top/verify"],
+    ["Kurdish · OTP theft", "scam", "کۆدێکت بۆ هات، تکایە کۆدەکە بنێرەوە بۆم تاکو گواستنەوەکە تەواو بکەم"],
+    ["Kurdish · real OTP", "ham", "کۆدی پشتڕاستکردنەوەت 458213 ە. لەگەڵ هیچ کەسێکدا بەشی مەکە"],
+    ["Kurdish · real promo", "ham", "ئاسیاسێل: پاکێجی نوێی ئینتەرنێت 20 گیگا بە 15000 دینار. بۆ زانیاری زیاتر سەردانی asiacell.com بکە"],
+    ["Arabic · account frozen", "scam", "تنبيه: حسابك بزين كاش موقوف. لاعادة التفعيل اضغط فورا http://zaincash-iq.top/verify"],
+    ["Arabic · customs fee", "scam", "وصلك طرد بس متوقف بالكمرك. للافراج عنه ادفع 25000 دينار على 0750 000 0000"],
+    ["Arabic · real OTP", "ham", "رمز التحقق الخاص بك هو 458213. لا تشاركه مع اي شخص"]
+  ];
+
+  var $ = function(id){ return document.getElementById(id); };
+  var msg = $("msg");
+
+  function esc(s){
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  function mergeSpans(spans){
+    if(!spans.length) return [];
+    var s = spans.slice().sort(function(a,b){ return a[0]-b[0] || (b[1]-b[0])-(a[1]-a[0]); });
+    var out = [];
+    for(var i=0;i<s.length;i++){
+      var lo=s[i][0], hi=s[i][1], lab=s[i][2];
+      if(out.length && lo < out[out.length-1][1]){
+        if(hi > out[out.length-1][1]) out.push([out[out.length-1][1], hi, lab]);
+        continue;
+      }
+      out.push([lo,hi,lab]);
+    }
+    return out;
+  }
+
+  function highlight(text, spans){
+    var parts=[], cursor=0, merged=mergeSpans(spans);
+    for(var i=0;i<merged.length;i++){
+      var lo=Math.max(merged[i][0],cursor), hi=Math.min(merged[i][1],text.length), lab=merged[i][2];
+      if(hi<=lo) continue;
+      parts.push(esc(text.slice(cursor,lo)));
+      parts.push('<mark style="--hl:'+(HL[lab]||"var(--surface-3)")+'" title="'+esc(lab)+'">'+esc(text.slice(lo,hi))+"</mark>");
+      cursor=hi;
+    }
+    parts.push(esc(text.slice(cursor)));
+    return parts.join("");
+  }
+
+  function render(){
+    var text = msg.value;
+    var det = $("det");
+    if(!text.trim()){
+      det.className = "detector";
+      $("vtext").textContent = "Waiting for a message";
+      $("mark").textContent = "·";
+      $("pct").textContent = "";
+      $("bar").style.width = "0%";
+      $("v-en").textContent = $("v-ckb").textContent = $("v-ar").textContent = "—";
+      $("bubble").textContent = "";
+      $("legend").innerHTML = "";
+      $("reasons").innerHTML = "";
+      $("grams").innerHTML = "";
+      return;
+    }
+    var r = eng.predict(text);
+    var scam = r.label === "scam";
+    det.className = "detector " + (scam ? "is-scam" : "is-ham");
+
+    $("vtext").textContent = scam ? "Likely a scam" : "Looks legitimate";
+    $("mark").textContent = scam ? "!" : "✓";
+    var conf = scam ? r.probability : 1 - r.probability;
+    $("pct").textContent = (conf*100).toFixed(1) + "% confidence · P(scam) " + r.probability.toFixed(3);
+    $("bar").style.width = (r.probability*100).toFixed(1) + "%";
+
+    $("v-en").textContent = scam ? "Likely a SCAM" : "Looks legitimate";
+    $("v-ckb").textContent = scam ? "بە گومانەوە ساختەیە" : "ئاسایی دیارە";
+    $("v-ar").textContent = scam ? "على الأرجح احتيال" : "تبدو رسالة عادية";
+
+    $("bubble").innerHTML = highlight(text, r.spans);
+
+    var fired = {};
+    for(var i=0;i<r.spans.length;i++) fired[r.spans[i][2]] = true;
+    var lg = [];
+    for(var j=0;j<LEGEND.length;j++){
+      if(fired[LEGEND[j][0]]){
+        lg.push('<span class="lg"><i style="background:'+(HL[LEGEND[j][0]]||"var(--surface-3)")+'"></i>'+LEGEND[j][1]+"</span>");
+      }
+    }
+    $("legend").innerHTML = lg.join("");
+
+    // url_present/url_count and phone_present/phone_count carry the same
+    // weight on a message with one link or one number, so showing both prints
+    // the identical reason twice. Keep the one a person would say out loud.
+    var DEDUPE = {url_count:"url_present", phone_count:"phone_present"};
+    var shown = {};
+    r.contributions.forEach(function(c){ if(c.kind==="signal") shown[c.name]=true; });
+    var sig = r.contributions.filter(function(c){
+      if(c.kind !== "signal") return false;
+      var twin = DEDUPE[c.name];
+      return !(twin && shown[twin]);
+    }).slice(0,7);
+    var maxAbs = 0;
+    sig.forEach(function(c){ maxAbs = Math.max(maxAbs, Math.abs(c.contribution)); });
+    $("reasons").innerHTML = sig.length ? sig.map(function(c){
+      var L = LABELS[c.name] || [c.name,"",""];
+      var w = maxAbs ? Math.max(4, Math.abs(c.contribution)/maxAbs*100) : 0;
+      var dir = c.contribution > 0 ? "toward-scam" : "toward-ham";
+      return '<div class="rrow '+dir+'">'
+        + '<div class="rname">'+esc(L[0])+"</div>"
+        + '<div class="rtrans">'+esc(L[1])+" · "+esc(L[2])+"</div>"
+        + '<div class="rbar"><span class="track"><i style="width:'+w.toFixed(0)+'%"></i></span>'
+        + '<span class="rval">'+(c.contribution>0?"+":"")+c.contribution.toFixed(2)+"</span></div>"
+        + "</div>";
+    }).join("") : '<p class="seclede" style="margin:0">No named signal fired — the verdict rests on text patterns alone.</p>';
+
+    var ng = r.contributions.filter(function(c){ return c.kind !== "signal"; }).slice(0,14);
+    $("grams").innerHTML = ng.length ? ng.map(function(c){
+      return '<span class="gram">'+esc(c.name)+"<u>"+(c.contribution>0?"+":"")+c.contribution.toFixed(3)+"</u></span>";
+    }).join("") : '<p class="seclede" style="margin:8px 0 0">None in the top contributors.</p>';
+  }
+
+  var chips = $("chips");
+  EXAMPLES.forEach(function(ex){
+    var b = document.createElement("button");
+    b.className = "chip";
+    b.type = "button";
+    b.setAttribute("data-kind", ex[1]);
+    b.textContent = ex[0];
+    b.addEventListener("click", function(){ msg.value = ex[2]; render(); msg.focus(); });
+    chips.appendChild(b);
+  });
+
+  var t;
+  msg.addEventListener("input", function(){ clearTimeout(t); t = setTimeout(render, 90); });
+
+  msg.value = EXAMPLES[0][2];
+  render();
+})();
+</script>
