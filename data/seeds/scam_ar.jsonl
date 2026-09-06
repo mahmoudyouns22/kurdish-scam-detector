@@ -50,3 +50,11 @@
 {"id": "ar-scam-050", "text": "الدعم الفني: لايقاف قطع خطك، ارسل رقم الهوية ورقم البطاقة فورا", "label": "scam", "lang": "ar", "category": "support", "source": "authored"}
 {"id": "ar-scam-051", "text": "عزيزي، عدنا سجل غير مطابق بالنظام. اتصل على 0790 000 0000 قبل ايقاف خطك", "label": "scam", "lang": "ar", "category": "support", "source": "authored"}
 {"id": "ar-scam-052", "text": "تنبيه رسمي: خطك راح ينقطع اذا ما سويت تحقق. اضغط http://iq-telecom.ga/v", "label": "scam", "lang": "ar", "category": "support", "source": "authored"}
+{"id": "ar-scam-053", "text": "شركة عالمية تحتاج موظفين عمل من البيت. 500 دولار اسبوعيا. ارسل اسمك الكامل ورقم حسابك", "label": "scam", "lang": "ar", "category": "job", "source": "authored"}
+{"id": "ar-scam-054", "text": "وزارة العمل: فتح 200 فرصة عمل جديدة. للتسجيل ارسل 25000 دينار الى 0770 000 0000", "label": "scam", "lang": "ar", "category": "job", "source": "authored"}
+{"id": "ar-scam-055", "text": "نحتاج مندوب مبيعات، راتب 1500000 دينار مع عمولة. فقط نحتاج معلومات بطاقتك البنكية", "label": "scam", "lang": "ar", "category": "job", "source": "authored"}
+{"id": "ar-scam-056", "text": "عزيزي، تم قبول طلب التوظيف. لاكمال الاجراء ارسل 30000 دينار رسوم تسجيل قبل بكرة", "label": "scam", "lang": "ar", "category": "job", "source": "authored"}
+{"id": "ar-scam-057", "text": "طردك محتجز في مكتب الكمرك. ادفع رسوم 45000 دينار هنا http://customs-iq.top/pay", "label": "scam", "lang": "ar", "category": "delivery", "source": "authored"}
+{"id": "ar-scam-058", "text": "فشلت محاولة التوصيل. اكد عنوانك خلال 24 ساعة http://addr-verify.click", "label": "scam", "lang": "ar", "category": "delivery", "source": "authored"}
+{"id": "ar-scam-059", "text": "وصلك طرد ثمين. لاستلامه ارسل رقم هويتك ومعلومات بطاقتك البنكية", "label": "scam", "lang": "ar", "category": "delivery", "source": "authored"}
+{"id": "ar-scam-060", "text": "تنبيه اخير: طردك راح يرجع للمرسل بكرة. ارسل رسوم 12000 دينار بسرعة", "label": "scam", "lang": "ar", "category": "delivery", "source": "authored"}

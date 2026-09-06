@@ -12,7 +12,12 @@ experiments that matter:
   knowing and worth saying.
 * **Adversarial probe** -- the evasions a real scammer uses. These are held out
   of `build_dataset.py` on purpose; training on them would make this section
-  meaningless.
+  meaningless. The one exception is Latin script, which is not really an
+  evasion but how a lot of Kurdish is simply typed, and which the classifier
+  used to fail outright. Training is now augmented with an ASCII-ish
+  romanisation, so the probe here uses a *different* (diacritic, Hawar-style)
+  romanisation. The question it asks is unchanged: does this generalise to a
+  romanisation the model has never seen?
 
 Every split is group-aware on `seed_id`.
 """
@@ -38,16 +43,24 @@ ZERO_WIDTH = ["​", "‌", "‍", "⁠"]
 TATWEEL = "ـ"
 ARABIC_INDIC = {str(d): chr(0x0660 + d) for d in range(10)}
 
-# Approximate Sorani/Arabic -> Latin. Not a scholarly romanisation; the point
-# is to leave the Arabic script entirely and see what survives.
+# Sorani/Arabic -> Latin, diacritic (Hawar-style) romanisation.
+#
+# This is deliberately NOT `normalize.LATIN_TRANSLIT`, which is what
+# `build_dataset.py` augments training with. The two disagree on most of the
+# sounds Latin lacks -- ş/sh, ç/ch, kh/x, ê/e, a/3 -- so a model trained on the
+# ASCII-ish style has never seen this one. Probing with the same map the model
+# trained on would measure memorisation and report it as robustness.
+#
+# Both styles are things people actually type; which one you get depends on the
+# keyboard and the writer.
 TRANSLIT = {
-    "ا": "a", "آ": "a", "ب": "b", "پ": "p", "ت": "t", "ث": "s", "ج": "c",
-    "چ": "ch", "ح": "h", "خ": "x", "د": "d", "ذ": "z", "ر": "r", "ڕ": "rr",
-    "ز": "z", "ژ": "j", "س": "s", "ش": "sh", "ص": "s", "ض": "d", "ط": "t",
-    "ظ": "z", "ع": "3", "غ": "gh", "ف": "f", "ڤ": "v", "ق": "q", "ک": "k",
-    "ك": "k", "گ": "g", "ل": "l", "ڵ": "ll", "م": "m", "ن": "n", "و": "w",
-    "ۆ": "o", "ھ": "h", "ه": "h", "ە": "e", "ی": "y", "ي": "y", "ێ": "e",
-    "ئ": "", "ء": "", "ة": "a", "ى": "a", "ژ": "j",
+    "ا": "a", "آ": "a", "ب": "b", "پ": "p", "ت": "t", "ث": "s", "ج": "j",
+    "چ": "ç", "ح": "h", "خ": "kh", "د": "d", "ذ": "z", "ر": "r", "ڕ": "r",
+    "ز": "z", "ژ": "j", "س": "s", "ش": "ş", "ص": "s", "ض": "d", "ط": "t",
+    "ظ": "z", "ع": "a", "غ": "g", "ف": "f", "ڤ": "v", "ق": "q", "ک": "k",
+    "ك": "k", "گ": "g", "ل": "l", "ڵ": "ll", "م": "m", "ن": "n", "و": "u",
+    "ۆ": "ô", "ھ": "h", "ه": "h", "ە": "a", "ی": "î", "ي": "î", "ێ": "ê",
+    "ئ": "", "ء": "", "ة": "a", "ى": "a",
 }
 
 
@@ -270,7 +283,14 @@ def exp_adversarial(pipe, test, seed=11):
     print("the model drifts toward 'scam' and recall appears to *improve*")
     print("while precision quietly collapses. The false-positive rate on")
     print("evaded ham is the column that exposes that.")
-    print("These transforms never appear in training.\n")
+    print("These transforms never appear in training, with one caveat:")
+    print("Latin script is not really an evasion, it is how a lot of")
+    print("Kurdish is typed, and the classifier used to fail on it")
+    print("outright. Training is now augmented with an ASCII-ish")
+    print("romanisation (sh/ch/3), so the row below uses a different,")
+    print("diacritic Hawar-style one (ş/ç/ê) that training has never")
+    print("seen. It still measures generalisation, not recall of a")
+    print("transform the model was fed.\n")
     rng = random.Random(seed)
     y = test["label"].to_numpy()
     ham_m, scam_m = y == "ham", y == "scam"

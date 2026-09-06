@@ -173,6 +173,42 @@ MONEY_RE = re.compile(
     re.IGNORECASE,
 )
 
+# --- Latin transliteration ---------------------------------------------------
+#
+# Kurds routinely type Sorani in Latin script on a phone, so a scam message can
+# arrive romanised with no Arabic script at all. That was this classifier's
+# worst failure case: the character n-grams it learned simply do not occur in
+# Latin text.
+#
+# This map is the ASCII-ish style -- digraphs and numerals for the sounds Latin
+# lacks (sh, ch, gh, 3 for ayn). `build_dataset.py` uses it to augment training
+# so romanised messages are represented at all.
+#
+# It is deliberately NOT the map `evaluate.py` probes with. Training and
+# testing on one identical transform would measure memorisation; the probe uses
+# a diacritic (Hawar-style) romanisation instead, so it still asks whether the
+# model generalises to a romanisation it has never seen.
+LATIN_TRANSLIT = {
+    "ا": "a", "آ": "a", "ب": "b", "پ": "p", "ت": "t", "ث": "s", "ج": "c",
+    "چ": "ch", "ح": "h", "خ": "x", "د": "d", "ذ": "z", "ر": "r", "ڕ": "rr",
+    "ز": "z", "ژ": "j", "س": "s", "ش": "sh", "ص": "s", "ض": "d", "ط": "t",
+    "ظ": "z", "ع": "3", "غ": "gh", "ف": "f", "ڤ": "v", "ق": "q", "ک": "k",
+    "ك": "k", "گ": "g", "ل": "l", "ڵ": "ll", "م": "m", "ن": "n", "و": "w",
+    "ۆ": "o", "ھ": "h", "ه": "h", "ە": "e", "ی": "y", "ي": "y", "ێ": "e",
+    "ئ": "", "ء": "", "ة": "a", "ى": "a",
+}
+
+
+def to_latin(text: str, table: dict | None = None) -> str:
+    """Romanise Arabic-script text character by character.
+
+    Approximate on purpose. Nobody romanising a text message on a phone is
+    following a scholarly standard, and the model has to cope with that.
+    """
+    table = LATIN_TRANSLIT if table is None else table
+    return "".join(table.get(ch, ch) for ch in text)
+
+
 LONG_NUM_RE = re.compile(r"\b\d{4,}\b")
 
 URL_TOKEN = " __url__ "

@@ -3,7 +3,7 @@
 Scam/phishing SMS detection for **Sorani Kurdish** and **Iraqi Arabic**, with a
 per-message explanation of *why* a message was flagged.
 
-CPU-only, trains in ~52 seconds, runs offline. Logistic regression over
+CPU-only, trains in ~44 seconds, runs offline. Logistic regression over
 character n-grams plus interpretable hand-built signals — chosen so the model
 can show its reasoning, which a black box cannot.
 
@@ -117,12 +117,12 @@ This reframes the project usefully:
         ┌──────────────────┴──────────────────┐
         ▼                                     ▼
   app.py (Streamlit)              export_web.py -> model.json
-  desktop, RTL, ckb/ar/en         719 KB, 14,352 dims
+  desktop, RTL, ckb/ar/en         1,268 KB, 26,158 dims
                                               │
                                               ▼
                                   engine.js (same pipeline in JS)
-                                  verified vs Python on all 3,321
-                                  rows, max |dP| 2e-15
+                                  verified vs Python on all 3,840
+                                  rows, max |dP| 5.6e-15
                                               │
                                               ▼
                                   demo.html - one file, opens in
@@ -152,44 +152,54 @@ the same fold. Without that, template leakage returns a meaningless ~99%.
 ### Model comparison — 5-fold cross-validation, grouped on `seed_id`
 
 Mean ± population std of scam-F1 across all five folds. One fold holds out only
-~42 seeds, so single-fold numbers swing several points; these are the numbers
+~48 seeds, so single-fold numbers swing several points; these are the numbers
 to quote.
 
 | model | scam-F1 | ar | ckb |
 |---|---|---|---|
-| **Logistic regression (shipped)** | **0.930 ± 0.034** | 0.917 | 0.936 |
-| Linear SVC | 0.921 ± 0.036 | 0.907 | 0.929 |
-| Random forest | 0.896 ± 0.054 | 0.852 | 0.922 |
-| Logistic regression, signals centred | 0.925 ± 0.033 | 0.932 | 0.916 |
-| Logistic regression, no normalisation | 0.932 ± 0.027 | 0.928 | 0.927 |
+| **Logistic regression (shipped)** | **0.961 ± 0.012** | 0.962 | 0.959 |
+| Linear SVC | **0.966 ± 0.009** | 0.970 | 0.962 |
+| Random forest | 0.908 ± 0.023 | 0.892 | 0.921 |
+| Logistic regression, signals centred | 0.931 ± 0.018 | 0.941 | 0.920 |
+| Logistic regression, no normalisation | 0.957 ± 0.009 | 0.962 | 0.951 |
 
-Logistic regression wins outright, so the model that can explain itself is also
-the most accurate one here — no trade-off had to be made. **No transformer is
-used**, because the linear baseline has not been beaten: adding XLM-R or
-Kurdish RoBERTa would mean a multi-GB dependency and a GPU assumption for no
-measured gain on 208 seeds. That is a result, not an omission.
+**Linear SVC is the most accurate model, and it is not the one shipped.** On an
+earlier corpus logistic regression led and there was no trade-off to make; with
+the romanised, 240-seed corpus SVC edges ahead by 0.005 F1 — inside a fold
+either way, but it is ahead. Logistic regression ships anyway, because it emits
+calibrated probabilities and signed per-feature contributions, and the
+explanation panel is the point of the tool. That is a deliberate ~0.005 paid for
+interpretability, not a claim that the shipped model is the strongest.
 
-### Held-out detail (fold 0: 166 train seeds / 42 test seeds, 672 rows)
+**No transformer is used.** The linear baseline has not been beaten: adding
+XLM-R or Kurdish RoBERTa would mean a multi-GB dependency and a GPU assumption
+for no measured gain on 240 seeds. That is a result, not an omission.
+
+### Held-out detail (fold 0: 192 train seeds / 48 test seeds, 768 rows)
 
 |  | precision | recall | F1 | support |
 |---|---|---|---|---|
-| ham | 0.869 | 0.949 | 0.908 | 336 |
-| scam | 0.944 | 0.857 | 0.899 | 336 |
+| ham | 0.972 | 0.995 | 0.983 | 384 |
+| scam | 0.995 | 0.971 | 0.983 | 384 |
 
-PR-AUC (average precision, scam): **0.982**
+PR-AUC (average precision, scam): **0.999**
 
 ```
 confusion matrix     pred_ham  pred_scam
-  true_ham              319        17
-  true_scam              48       288
+  true_ham              382         2
+  true_scam              11       373
 ```
 
-Per language: `ar` P 0.883 / R 0.800 / F1 0.839 · `ckb` P 1.000 / R 0.909 / F1 0.952
+Per language: `ar` P 1.000 / R 0.948 / F1 0.973 · `ckb` P 0.990 / R 0.995 / F1 0.992
 
-Per-category recall on this fold: prize 1.00, phishing 1.00, otp 1.00,
-transfer 1.00, delivery 0.75, job 0.50, support 0.50. **The weak cells are two
-seeds wide** — `job` is n=32 rows from 2 seeds — so treat them as "needs more
-seeds", not as a measured category weakness.
+Per-category recall: prize 1.00, phishing 1.00, charity 1.00, delivery 1.00,
+job 0.979, support 0.979, otp 0.917, **transfer 0.896**.
+
+`job` and `delivery` were the two weak cells on the previous corpus — 0.500 and
+0.750, from 6 seeds each. Four more seeds apiece took them to 0.979 and 1.000,
+which is the expected result when a "weak category" was really a sample-size
+artefact. `transfer` and `otp` are now the lowest, and the same caveat applies
+to them: they are small cells, not established weaknesses.
 
 ### Cross-lingual transfer
 
@@ -197,50 +207,60 @@ Grouped on `concept_id`, not `seed_id`. The two seed files are **parallel
 translations** (`ar-scam-017` is `ckb-scam-017` in Arabic, down to the
 amounts), so grouping on `seed_id` alone would put the Arabic twin of a Kurdish
 test message into training and report it as transfer. It inflated `joint → ckb`
-to 0.997 before this was caught. One concept split (21 held-out concepts) is
+to 0.997 before this was caught. One concept split (24 held-out concepts) is
 reused for every row, so the numbers are comparable.
 
 | train → test | full model | n-grams only (no signals) |
 |---|---|---|
-| ar → ar (in-language) | 0.949 | 1.000 |
-| ckb → ckb (in-language) | 0.949 | 0.917 |
-| **ar → ckb (transfer)** | **0.886** | **0.834** |
-| **ckb → ar (transfer)** | **0.952** | **0.724** |
-| joint → ckb | 0.940 | — |
-| joint → ar | 0.949 | — |
+| ar → ar (in-language) | 0.928 | 0.958 |
+| ckb → ckb (in-language) | 0.884 | 0.965 |
+| **ar → ckb (transfer)** | **0.832** | **0.482** |
+| **ckb → ar (transfer)** | **0.717** | **0.472** |
+| joint → ckb | 0.859 | — |
+| joint → ar | 0.883 | — |
 
-**Transfer works, and most of what crosses is not the script.** With the full
-model, Arabic → Kurdish loses ~6 points against in-language (0.886 vs 0.949),
-and Kurdish → Arabic loses nothing measurable. But the signals module is
-language-independent by construction — its lexicons cover both languages
-regardless of what was trained on — so the full-model columns credit hand-built
-rules as "transfer". Disabling signals isolates the shared script: transfer
-falls to 0.834 (ar→ckb) and 0.724 (ckb→ar), while in-language stays at
-0.917–1.000. Character n-grams over a shared script carry real but **partial**
-transfer; the cross-lingual signal layer is what closes the gap.
+**Transfer is real, and almost none of it is the script.** Arabic → Kurdish
+loses ~10 points against in-language (0.832 vs 0.928); Kurdish → Arabic loses
+more, to 0.717. Strip the signals and transfer collapses to ~0.48 both ways —
+barely above chance on a balanced set — while in-language n-grams stay at
+0.958–0.965. So character n-grams over a shared script transfer *poorly* on
+their own, and the language-independent signal layer is doing nearly all the
+cross-lingual work.
 
-The `ar → ar` n-grams-only 1.000 is a 21-concept sample, not a claim of
-perfection.
+This is a sharper answer than the earlier corpus gave, and a less flattering
+one. Before romanisation, n-grams-only transfer measured 0.834/0.724 and the
+shared script looked like it carried much of the load. Widening the character
+vocabulary to cover Latin appears to have specialised the n-grams further
+toward each language's own surface forms. Whichever way it is read, the honest
+version is: **do not credit the shared Arabic script for the transfer these
+numbers show.**
 
 ### Ablation (fold 0)
 
 | configuration | scam-F1 | ckb |
 |---|---|---|
-| full (char + word + signals, normalised) | 0.899 | 0.952 |
-| no normalisation | 0.917 | 0.952 |
-| no entity folding | 0.906 | 0.952 |
-| no normalisation, no folding | 0.930 | 0.952 |
-| char n-grams only | 0.910 | 0.919 |
-| word n-grams only | 0.903 | 0.919 |
-| char + word, no signals | 0.919 | 0.928 |
-| signals only | 0.903 | 0.907 |
-| signals centred (StandardScaler) | 0.920 | 0.909 |
+| full (char + word + signals, normalised) | 0.983 | 0.992 |
+| no normalisation | 0.971 | 0.972 |
+| no entity folding | 0.984 | 0.995 |
+| no normalisation, no folding | 0.962 | 0.962 |
+| char n-grams only | 0.948 | 0.918 |
+| word n-grams only | 0.965 | 0.953 |
+| char + word, no signals | 0.968 | 0.939 |
+| signals only | 0.891 | 0.876 |
+| signals centred (StandardScaler) | 0.948 | 0.923 |
 
-**Normalisation shows no in-distribution gain, and the design brief expected
-one.** This was investigated rather than hidden. The reason is the evaluation
-setup, not the normaliser: `build_dataset.py` perturbs train and test with the
-same generator, so both halves contain the same spelling variants and the model
-simply memorises both. Normalisation cannot help when nothing is unseen.
+**Normalisation now shows a small in-distribution gain — 0.983 with, 0.971
+without — where on the earlier corpus it showed none at all.** The earlier null
+result was an artefact of the evaluation setup rather than the normaliser:
+`build_dataset.py` perturbs train and test with the same generator, so both
+halves contain the same spelling variants and the model can memorise both.
+Normalisation cannot help when nothing is unseen. Romanised rows widened the
+orthographic spread enough for folding to start paying off directly.
+
+Note also that **entity folding is not earning its place** here: removing it
+scores 0.984 against 0.983. It is kept because memorising one campaign's short
+URL is not learning and would inflate held-out scores on a corpus this size —
+a methodological choice, not one these numbers support.
 
 It earns its place under **orthographic shift**, which is the case that
 actually matters — a scammer's spelling is not drawn from your training
@@ -248,26 +268,37 @@ distribution:
 
 | | clean F1 | shifted F1 | delta |
 |---|---|---|---|
-| with normalisation | 0.899 | **0.906** | +0.007 |
-| without normalisation | 0.917 | 0.871 | −0.047 |
+| with normalisation | 0.983 | 0.863 | −0.120 |
+| without normalisation | 0.971 | 0.847 | −0.124 |
 
-Without normalisation the model loses 4.7 points when the test set is pushed
-into unseen script variants. With it, performance holds. Normalisation buys
-**robustness**, not in-distribution accuracy, and on this corpus those are
-different things.
+On the earlier corpus this table was the whole justification for the normaliser:
+without it the model lost 4.7 points under orthographic shift, with it
+performance held. That gap has now almost closed — −0.120 against −0.124. Both
+configurations degrade badly under shift, and normalisation barely separates
+them.
+
+Normalisation is still kept, and now mostly on the direct gain in the ablation
+above (0.983 vs 0.971) rather than on robustness. The earlier, stronger claim
+did not survive a larger and more orthographically varied corpus, and the
+number that used to support it is left here rather than replaced.
 
 The signal scaler is `MaxAbsScaler`, not `StandardScaler`, primarily for
 honesty of explanation: centering gives an *absent* feature a negative value,
 which multiplied by a negative coefficient contributes *towards* scam — so the
 demo would cite "company name plus a link" as evidence on a message containing
 no link. Scaling without centering keeps absent signals at exactly zero. It
-also happens to score marginally better in cross-validation (0.930 vs 0.925)
-and clearly better on Kurdish (0.936 vs 0.916), so nothing was traded away.
+also happens to score better in cross-validation (0.961 vs 0.931) and better on
+Kurdish (0.959 vs 0.920), so nothing was traded away.
 
 ### Adversarial probe
 
-Evasions are applied to the **whole** held-out set, both classes, and none of
-them appears in training.
+Evasions are applied to the **whole** held-out set, both classes. None appears
+in training, with one deliberate exception: Latin script is not really an
+evasion, it is how a great deal of Kurdish is typed, and the classifier used to
+fail on it outright. Training is now augmented with an ASCII-ish romanisation
+(`sh`/`ch`/`3`), so the row below probes with a *different*, diacritic
+Hawar-style one (`ş`/`ç`/`ê`) that training has never seen. Probing with the map
+the model trained on would measure memorisation and report it as robustness.
 
 Scoring only evaded *scam* messages is misleading and an earlier version of
 this table did exactly that — it showed combined evasion reaching **1.000
@@ -278,31 +309,36 @@ it.
 
 | evasion | scam-F1 | scam recall | FPR on ham | F1 drop |
 |---|---|---|---|---|
-| baseline (no evasion) | 0.899 | 0.857 | 0.051 | — |
-| digit-system swap | 0.899 | 0.857 | 0.051 | 0.000 |
-| zero-width insertion | 0.887 | 0.878 | 0.101 | +0.011 |
-| tatweel padding | 0.924 | 0.946 | 0.101 | −0.026 |
-| combined (zw + tatweel + stretch) | 0.858 | 0.946 | **0.259** | +0.040 |
-| letter stretching | 0.720 | 0.619 | 0.101 | +0.179 |
-| **Latin transliteration** | **0.483** | **0.318** | 0.000 | **+0.416** |
+| baseline (no evasion) | 0.983 | 0.971 | 0.005 | — |
+| digit-system swap | 0.983 | 0.971 | 0.005 | 0.000 |
+| tatweel padding | 0.941 | 0.992 | 0.117 | +0.042 |
+| zero-width insertion | 0.920 | 0.969 | 0.138 | +0.063 |
+| letter stretching | 0.900 | 0.935 | 0.143 | +0.083 |
+| **Latin transliteration** (unseen style) | **0.886** | **0.799** | **0.005** | +0.097 |
+| combined (zw + tatweel + stretch) | 0.798 | 1.000 | **0.508** | +0.185 |
 
 Reading this honestly:
 
 - **Digit-system swap costs the attacker nothing and gains nothing** — the
   normaliser folds `٠-٩` and `۰-۹` to ASCII, so the evasion is fully defeated.
   Zero drop.
-- **Zero-width and tatweel are largely defeated too**, but note their FPR
-  doubles (0.051 → 0.101). The normaliser strips them; the residual damage is
-  that mangled text is unlike anything in training.
-- **Combined evasion is the degenerate case.** Recall rises to 0.946 while FPR
-  hits 0.259 — one in four legitimate messages flagged. A tool that flags
-  everything is useless, and this row is why recall alone must never be
-  reported.
-- **Latin transliteration is the real failure.** F1 collapses to 0.483 and
-  recall to 0.318 — the model misses two thirds of transliterated scams. The
-  corpus contains no Latin-script Kurdish, so the character n-grams have
-  nothing to match. This is the most exploitable weakness in the system and is
-  the top item on the roadmap.
+- **Latin transliteration went from the worst row to a middling one.** It was
+  F1 0.483 / recall 0.318 before the training augmentation; it is now 0.886 /
+  0.799 against a romanisation style the model has never seen. The FPR column
+  is what makes this a real gain rather than a trade: it stays at 0.005, the
+  same as baseline, so the extra recall is not bought by flagging legitimate
+  messages. One scam in five still gets through romanised.
+- **The other obfuscations got worse, and that is the cost of the fix.**
+  Zero-width FPR went 0.101 → 0.138, tatweel 0.101 → 0.117, letter stretching
+  0.101 → 0.143. Widening the character vocabulary to cover Latin appears to
+  have made the model readier to fire on unfamiliar character sequences in
+  general.
+- **Combined evasion is the degenerate case and is now clearly worse.** Recall
+  reaches 1.000 while FPR hits **0.508** — more than half of legitimate
+  messages flagged, up from 0.259. That 1.000 recall is not the model winning;
+  it is the model calling almost everything a scam once text is shredded into
+  rare n-grams. This row is why recall must never be reported alone, and it is
+  the clearest open regression in the project.
 
 ### Collected-data evaluation
 
@@ -316,33 +352,49 @@ wired and will report separately as soon as real messages exist.
 
 ## Known limitations
 
-**1. The entire corpus is synthetic.** All 3,321 rows are `source: "authored"`.
+**1. The entire corpus is synthetic.** All 3,840 rows are `source: "authored"`.
 Not one is a real intercepted message. Every number above measures whether a
 model can separate *authored scam patterns* from *authored legitimate
 patterns*. It is not evidence of field performance, and it should not be
 presented as such.
 
-**2. The effective sample size is 208, not 3,321.** The corpus is 208
+**2. The effective sample size is 240, not 3,840.** The corpus is 240
 hand-written seeds expanded ~16× by a template expander. Group-aware splitting
-means the model is genuinely tested on unseen seeds, but 42 held-out seeds per
-fold is small — hence ±0.034 std across folds and per-category cells only two
+means the model is genuinely tested on unseen seeds, but 48 held-out seeds per
+fold is small — hence ±0.012 std across folds and per-category cells only a few
 seeds wide.
 
-**3. Latin transliteration defeats it.** scam-F1 0.483, recall 0.318. A scammer
-writing Sorani in Latin script evades this classifier today.
+**3. Latin transliteration is handled, not solved.** It used to defeat the
+classifier outright (scam-F1 0.483, recall 0.318). Training is now augmented
+with an ASCII-ish romanisation, and against an unseen diacritic Hawar-style
+romanisation the model reaches scam-F1 0.886, recall 0.799 — with the
+false-positive rate on legitimate messages *unchanged* at 0.005, so the gain is
+not bought by flagging everything. One scam message in five still gets through
+in Latin script, and only two romanisation styles have been tested.
 
-**4. Heavy combined obfuscation makes it cry wolf.** 0.253 false-positive rate
-on legitimate messages under combined evasion — one legitimate message in four.
+**4. Heavy combined obfuscation makes it cry wolf, and the romanisation work
+made this worse.** Under zero-width plus tatweel plus letter stretching, the
+false-positive rate on legitimate messages is 0.508 — up from 0.253 before the
+augmentation. Recall goes to 1.000 in that row, which looks good and is not:
+the model is calling almost everything a scam once text is shredded into rare
+n-grams. Widening the character vocabulary to cover Latin appears to have made
+it readier to fire on unfamiliar character sequences generally. This is the
+clearest open regression in the project.
 
 **5. The Kurdish seeds were drafted by an author who is not a native Sorani
 speaker, then reviewed.** A native Sorani speaker has since read the seed files
-and confirmed the wording. That closes the register risk on the 208 seeds, but
+and confirmed the wording. That closes the register risk on the 240 seeds, but
 note what the review does and does not cover: it validates the seeds, not the
 ~16× template expansion built on top of them, whose perturbations are
 mechanical and unreviewed.
 
-**6. Normalisation gives no in-distribution gain** (§Ablation). It is justified
-by robustness under orthographic shift, not by the headline number.
+**6. Normalisation's benefit is small and was smaller before.** On the earlier
+208-seed corpus the ablation showed no in-distribution gain at all, and
+normalisation was justified purely by robustness under orthographic shift. With
+the romanised corpus it now earns a modest direct gain (0.983 with, 0.971
+without), and under orthographic shift the two are close (−0.120 vs −0.124).
+The honest summary is that normalisation helps, less than the design intent
+assumed.
 
 **7. KLPT is not used.** It would be the better citation for Kurdish
 normalisation, but every release pins `cyhunspell`/`chunspell`, which publish
@@ -371,10 +423,15 @@ letter was judged more important than maximising transfer.
    speaker has reviewed and confirmed the seed wording. The remaining gap is
    reviewing a sample of the *expanded* rows, since the perturbations that
    generate them are mechanical.
-3. **Close the Latin-transliteration hole.** Either add transliterated variants
-   as a training augmentation, or transliterate-to-Arabic-script as a
-   normalisation step so both forms map to one representation. The second is
-   cleaner and reuses the existing offset-map machinery.
+3. ~~Close the Latin-transliteration hole.~~ **Done, partly.** Training is
+   augmented with an ASCII-ish romanisation (`build_dataset._romanise`), and
+   against an unseen Hawar-style romanisation scam-F1 went 0.483 → 0.886. Two
+   things remain: one scam in five still gets through romanised, and the
+   augmentation regressed the combined-obfuscation FPR from 0.259 to 0.508.
+   Transliterate-to-Arabic-script *as a normalisation step* is still the
+   cleaner fix — it would collapse both orthographies into one representation
+   instead of asking the model to learn both, and would not widen the character
+   vocabulary the way augmentation did.
 4. **Fine-tune Kurdish RoBERTa / AS-RoBERTa** and compare honestly against this
    baseline. The linear model is not beaten yet; if a transformer does not beat
    it on held-out seeds, that result gets reported too.
@@ -382,8 +439,14 @@ letter was judged more important than maximising transfer.
    ~a few MB of sparse coefficients and runs on CPU in milliseconds, so
    on-device is realistic without a server — which also means no message ever
    leaves the phone.
-6. **Per-category thresholds.** OTP-harvesting detection is near-perfect while
-   job and delivery lag; one global threshold is leaving accuracy on the table.
+6. **Per-category thresholds.** `transfer` (0.896) and `otp` (0.917) now trail
+   the categories that sit at 1.000; one global threshold is leaving accuracy on
+   the table.
+7. **Shrink the browser bundle.** Adding romanised text grew the exported
+   vocabulary and took `model.json` from 719 KB to 1,268 KB, and `demo.html`
+   from 768 KB to 1,317 KB. For a tool aimed at people on Iraqi mobile data
+   that is a real cost, and pruning low-weight n-gram features should recover
+   most of it.
 
 ## Setup
 
@@ -397,7 +460,7 @@ pip install -r requirements.txt
 
 ```bash
 python src/build_dataset.py     # seeds -> data/corpus.csv   (~1s)
-python src/train.py             # train + compare -> models/ (~52s)
+python src/train.py             # train + compare -> models/ (~44s)
 python -m streamlit run src/app.py
 ```
 
@@ -437,7 +500,7 @@ $ python src/predict.py "پیرۆزە! ژمارەکەت 10000000 دینار بر
 kurdish-scam-detector/
 ├── data/
 │   ├── README.md          provenance, ethics, redaction + contribution flow
-│   ├── seeds/*.jsonl      208 hand-authored seeds (tracked)
+│   ├── seeds/*.jsonl      240 hand-authored seeds (tracked)
 │   └── corpus.csv         generated, gitignored
 ├── src/
 │   ├── normalize.py       Arabic-script normalisation + entity folding + offset map

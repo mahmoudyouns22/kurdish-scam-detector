@@ -1,60 +1,60 @@
-corpus 3321  ->  train 2649  test 672
-train seeds 166  test seeds 42
+corpus 3840  ->  train 3072  test 768
+train seeds 192  test seeds 48
 seed overlap: none
 
-### logreg  (fit+predict 27.4s)
+### logreg  (fit+predict 13.6s)
               precision    recall  f1-score   support
 
-         ham      0.899     0.952     0.925       336
-        scam      0.949     0.893     0.920       336
+         ham      0.972     0.995     0.983       384
+        scam      0.995     0.971     0.983       384
 
-    accuracy                          0.923       672
-   macro avg      0.924     0.923     0.923       672
-weighted avg      0.924     0.923     0.923       672
+    accuracy                          0.983       768
+   macro avg      0.983     0.983     0.983       768
+weighted avg      0.983     0.983     0.983       768
 
 confusion matrix (rows true ham/scam, cols pred ham/scam):
-[[320  16]
- [ 36 300]]
-  ar: scam-F1 0.886  (n=320)
-  ckb: scam-F1 0.952  (n=352)
+[[382   2]
+ [ 11 373]]
+  ar: scam-F1 0.973  (n=384)
+  ckb: scam-F1 0.992  (n=384)
 
-### svc  (fit+predict 27.0s)
+### svc  (fit+predict 13.9s)
               precision    recall  f1-score   support
 
-         ham      0.909     0.952     0.930       336
-        scam      0.950     0.905     0.927       336
+         ham      0.987     0.961     0.974       384
+        scam      0.962     0.987     0.974       384
 
-    accuracy                          0.929       672
-   macro avg      0.930     0.929     0.929       672
-weighted avg      0.930     0.929     0.929       672
+    accuracy                          0.974       768
+   macro avg      0.974     0.974     0.974       768
+weighted avg      0.974     0.974     0.974       768
 
 confusion matrix (rows true ham/scam, cols pred ham/scam):
-[[320  16]
- [ 32 304]]
-  ar: scam-F1 0.900  (n=320)
-  ckb: scam-F1 0.952  (n=352)
+[[369  15]
+ [  5 379]]
+  ar: scam-F1 0.987  (n=384)
+  ckb: scam-F1 0.962  (n=384)
 
-### rf  (fit+predict 28.2s)
+### rf  (fit+predict 16.2s)
               precision    recall  f1-score   support
 
-         ham      0.850     0.857     0.853       336
-        scam      0.856     0.848     0.852       336
+         ham      0.909     0.880     0.894       384
+        scam      0.884     0.911     0.897       384
 
-    accuracy                          0.853       672
-   macro avg      0.853     0.853     0.853       672
-weighted avg      0.853     0.853     0.853       672
+    accuracy                          0.896       768
+   macro avg      0.896     0.896     0.896       768
+weighted avg      0.896     0.896     0.896       768
 
 confusion matrix (rows true ham/scam, cols pred ham/scam):
-[[288  48]
- [ 51 285]]
-  ar: scam-F1 0.789  (n=320)
-  ckb: scam-F1 0.909  (n=352)
+[[338  46]
+ [ 34 350]]
+  ar: scam-F1 0.870  (n=384)
+  ckb: scam-F1 0.922  (n=384)
 
-total training time: 82.7s
+total training time: 43.6s
 
 scam-F1 on held-out seeds:
-  svc     0.927
-  logreg  0.920
-  rf      0.852
+  logreg  0.983
+  svc     0.974
+  rf      0.897
 
-shipped logreg refit on all 3321 rows -> C:\Users\lenovo\Desktop\me\projects\kurdish-scam-detector\models\model.joblib
+shipped logreg refit on all 3840 rows -> C:\Users\lenovo\Desktop\me\projects\kurdish-scam-detector\models\model.joblib

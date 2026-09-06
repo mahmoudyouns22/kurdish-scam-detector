@@ -30,7 +30,7 @@ import random
 import re
 from pathlib import Path
 
-from normalize import console_utf8
+from normalize import LATIN_TRANSLIT, console_utf8, to_latin
 
 ROOT = Path(__file__).resolve().parent.parent
 SEED_DIR = ROOT / "data" / "seeds"
@@ -224,6 +224,40 @@ def _greeting(text: str, rng: random.Random, lang: str) -> str:
     return g + text
 
 
+def _romanise(text: str, rng: random.Random) -> str:
+    """Rewrite the message in Latin script, fully or in part.
+
+    People romanise inconsistently -- a whole message on a Latin keyboard, or a
+    few words mid-sentence. Both are generated, because a model trained only on
+    fully-romanised text still misses the mixed-script case.
+
+    Placeholders (__url__, phone numbers, amounts) are left alone: they are
+    already Latin, and mangling them would teach the model that a romanised
+    message never contains a link.
+    """
+    def keep(token: str) -> bool:
+        return token.startswith("__") or not any("؀" <= c <= "ۿ" for c in token)
+
+    tokens = text.split(" ")
+
+    if rng.random() < 0.55:
+        # Whole message, as if typed on a Latin keyboard.
+        return " ".join(t if keep(t) else to_latin(t, LATIN_TRANSLIT) for t in tokens)
+
+    # Partial: romanise a contiguous run, leaving the rest in Arabic script.
+    arabic = [i for i, t in enumerate(tokens) if not keep(t)]
+    if len(arabic) < 2:
+        return text
+    start = rng.randrange(len(arabic))
+    end = min(len(arabic), start + rng.randint(1, max(1, len(arabic) // 2)))
+    chosen = set(arabic[start:end])
+
+    return " ".join(
+        to_latin(t, LATIN_TRANSLIT) if i in chosen else t
+        for i, t in enumerate(tokens)
+    )
+
+
 def expand_seed(seed: dict, n: int, rng: random.Random) -> list[dict]:
     """Return `n` rows for one seed: the original plus n-1 perturbed variants."""
     is_scam = seed["label"] == "scam"
@@ -251,6 +285,13 @@ def expand_seed(seed: dict, n: int, rng: random.Random) -> list[dict]:
             t = _de_normalise(t, rng, lang)
         if rng.random() < 0.35:
             t = _swap_digits(t, rng)
+
+        # Latin script. Applied at an identical rate to both classes, so the
+        # model cannot learn "romanised => scam"; that shortcut would be worse
+        # than the hole it fills, because plenty of legitimate messages are
+        # typed in Latin too.
+        if rng.random() < 0.22:
+            t = _romanise(t, rng)
         if rng.random() < 0.5:
             t = _spacing_noise(t, rng)
         if rng.random() < 0.4:
